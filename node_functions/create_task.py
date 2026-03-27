@@ -1,9 +1,15 @@
 from states.tm_state import TaskManagerState
-from langchain_core.messages import SystemMessage, HumanMessage
-from models.task_generation_model import generation_model
+from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
+from modals.create_task_modal import modal
+from utils.parser import due_time_parser
+from langchain.tools import tool, ToolRuntime
+from langgraph.types import Command
+from db.queries import insert_task
 
-def create_task(state : TaskManagerState):
-    user_input = state['user_input']
+@tool
+def create_task(task_statement : str, runtime : ToolRuntime) -> Command:
+
+    """LLM node for extracting task as JSON"""
 
     system_message = f"""
     You are a task extraction assistant.
@@ -13,7 +19,7 @@ def create_task(state : TaskManagerState):
     - description (1 short sentence)
     - category (work, study, personal, health, other)
     - priority (low, medium, high)
-    - due_time
+    - due_time (provided by user in string like next week, tomorrow etc)
 
     Rules:
     - Infer category and priority if missing.
@@ -33,12 +39,24 @@ def create_task(state : TaskManagerState):
     messages = [
         SystemMessage(system_message),
 
-        HumanMessage(user_input)
+        HumanMessage(task_statement)
     ]
 
-    task = generation_model.invoke(messages).model_dump()
+    task = modal.invoke(messages).model_dump()
 
-    return {
-        'task':task
-    }
+    date_str = task['due_time']
+
+    parsed_date = due_time_parser(date_str)
+
+    task['due_time'] = parsed_date
+
+    insert_task(task)
+
+    tool_message = ToolMessage(
+        content=str(task),
+        tool_name="create_task",
+        tool_call_id=runtime.tool_call_id
+    )
+
+    return Command(update={"task":task, "messages": [tool_message]})
     

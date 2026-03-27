@@ -1,12 +1,9 @@
-from typing import TypedDict, Literal
+from typing import TypedDict, Literal, Annotated
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 
 # Defining State of the workflow
 class TaskManagerState(TypedDict):
-    user_input:str
-    intent:Literal['create_task', 'update_task', 'delete_task', 'other']
+    messages:Annotated[list[BaseMessage], add_messages]
+    task_statement:str
     task:dict
-    missing_info:str
-    feedback:str
-    iterations:int
-    max_iterations:int
-    task_status:Literal['optimized', 'needs_optimization']
