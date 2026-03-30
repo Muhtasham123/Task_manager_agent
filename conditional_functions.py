@@ -22,3 +22,12 @@ def eval_router(state : TaskManagerState):
             return 'complete'
        else:
             return 'needs_optimization'
+
+def iteration_counter(state : TaskManagerState):
+     iterations = state.get('iterations', '')
+     max_iterations = state.get('max_iterations', '')
+
+     if iterations >= max_iterations:
+          return "iterations_complete"
+     else:
+          return "can_loop"

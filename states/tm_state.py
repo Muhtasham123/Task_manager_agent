@@ -7,3 +7,5 @@ class TaskManagerState(TypedDict):
     messages:Annotated[list[BaseMessage], add_messages]
     task_statement:str
     task:dict
+    iterations:int
+    max_iterations:int

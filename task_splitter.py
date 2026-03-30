@@ -27,20 +27,21 @@ Instructions:
 2. If there is one complex goal, do NOT split.
 3. Keep tasks as full sentences.
 4. Output must strictly follow the JSON format: tasks (list of strings), unsure (True/False), msg (string).
+5. If user says anything besides to perform an action, just store user query as it is
+in the task list.
 """
 
 messages = [SystemMessage(system_message)]
 max_retries = 2
 
-def split_tasks(res_msg, try_no):
+def split_tasks(query, try_no):
     
-    user_input = input(res_msg)
-    human_message = HumanMessage(user_input)
+    human_message = HumanMessage(query)
     messages.append(human_message)
     
     response = structured_model.invoke(messages).model_dump()
 
-    if response['unsure'] and try_no <= max_retries:
-        return split_tasks(response['msg'], try_no + 1)
+    if response['unsure']:
+        return response['msg']
 
     return response['tasks']

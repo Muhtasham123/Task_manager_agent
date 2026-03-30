@@ -1,3 +1,4 @@
+import db.connection
 from db.connection import conn, cursor
 
 def create_tables():
@@ -9,6 +10,7 @@ def create_tables():
         category VARCHAR(255),
         priority VARCHAR(255),
         due_time DATETIME NULL,
+        status varchar(255) DEFAULT "pending",
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
