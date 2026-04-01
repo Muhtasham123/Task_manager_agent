@@ -1,4 +1,5 @@
-from db.connection import conn, cursor
+from db.connection import conn, cursor, r
+import json
 
 def insert_task(task : dict):
     try:
@@ -12,13 +13,23 @@ def insert_task(task : dict):
             task['priority'],
             task['due_time']
         ))
+
+        task_id = cursor.lastrowid
+
         conn.commit()
-        return cursor.lastrowid
+
+        if task_id:
+            r.xadd("task_events", {
+                "event_type" : "CREATE_TASK",
+                "task_id" : task_id
+            })
+
+        return task_id
     except Exception as e:
         print("Error inserting task : ",e)
 
 
-def update_task(id : str, updation_dict : dict):
+def update_task(id : str, updation_dict : dict, metadata : dict):
     try:
         # buildint SET clause
 
@@ -31,6 +42,17 @@ def update_task(id : str, updation_dict : dict):
         cursor.execute(final_query, values)
 
         conn.commit()
+
+        rowcount = cursor.rowcount
+
+        if rowcount:
+            r.xadd("task_events", {
+                "event_type" : "UPDATE_TASK",
+                "task_id" : id,
+                "updation_dict":json.dumps(updation_dict),
+                "metadata":json.dumps(metadata)
+            })
+
         return True
 
     except Exception as e:
@@ -45,6 +67,14 @@ def delete_task(task_id : int):
         """,(task_id,))
 
         conn.commit()
+
+        rowcount = cursor.rowcount
+
+        if rowcount:
+            r.xadd("task_events", {
+                "event_type" : "DELETE_TASK",
+                "task_id" : task_id,
+            })
 
         return True
     except Exception as e:

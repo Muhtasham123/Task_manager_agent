@@ -2,7 +2,6 @@ from langchain_core.messages import ToolMessage
 from utils.functions import make_updated_doc
 from langchain.tools import tool, ToolRuntime
 from db.queries import update_task as update_task_in_db
-from db.vector_store import vec_store
 from pydantic import BaseModel, Field
 from typing import Literal
 
@@ -67,12 +66,10 @@ def update_task(
         tool_call_id=runtime.tool_call_id
     )
 
-    # getting updating doc and replacing old doc with updated one
+    # getting updating doc
     updated_doc = make_updated_doc(updation_dict, task_docs[0]['metadata'])
-    vec_store.delete(ids=[task_docs[0]['task_id']])
-    vec_store.add_documents([updated_doc], ids=[task_docs[0]['task_id']])
 
-    update_task_in_db(task_id, updation_dict)
+    update_task_in_db(task_id, updation_dict, updated_doc)
 
     return ToolMessage(
         content="Success",

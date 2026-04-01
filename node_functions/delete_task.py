@@ -13,10 +13,6 @@ def delete_task(task_id:int, runtime:ToolRuntime):
     """LLM node for deleteing task from database"""
     print("Using delete_task tool....")
     
-    # deleting task from vector store
-
-    vec_store.delete(ids = [str(task_id)])
-
     # deleting task from actual database
 
     delete_task_in_db(task_id)

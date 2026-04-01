@@ -5,7 +5,6 @@ from utils.functions import due_time_parser, make_doc
 from langchain.tools import tool, ToolRuntime
 from langgraph.types import Command
 from db.queries import insert_task
-from db.vector_store import vec_store
 
 @tool(args_schema = TaskSchema)
 def create_task(
@@ -30,10 +29,9 @@ def create_task(
         "due_time":parsed_date
     }
 
-    task_id = insert_task(task)
     task_doc = make_doc(task, task_id)
-    vec_store.add_documents(documents=[task_doc], ids = [str(task_id)])
-
+    task_id = insert_task(task, task_doc)
+    
     return ToolMessage(
         content=task,
         tool_name="create_task",
