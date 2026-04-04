@@ -6,6 +6,7 @@ conn = mysql.connector.connect(
     user="root",
     password="",
     database="task_manager",
+    autocommit=True
 )
 
 r = redis.Redis(

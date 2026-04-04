@@ -82,17 +82,20 @@ async def execute_query(req: RequestSchema):
     query = req.query
     chat_id = req.chat_id
 
-    task_list = split_tasks(query, 1)
-    print(task_list)
+    #task_list = split_tasks(query, 1)
+    #print(task_list)
 
-    if not task_list:
-        return {"message": "No tasks detected"}
+    # if not task_list:
+    #     return {"message": "No tasks detected"}
 
-    final_state = [
-        execute_workflow(task, chat_id)
-        for task in task_list
-    ]
+    # final_state = [
+    #     execute_workflow(task, chat_id)
+    #     for task in task_list
+    # ]
+    #msgs = [state['messages'][-1].content for state in final_state]
 
-    msgs = [state['messages'][-1].content for state in final_state]
+    final_state = execute_workflow(query, chat_id)
+    msgs = final_state['messages'][-1].content
+
 
     return {"message": msgs}

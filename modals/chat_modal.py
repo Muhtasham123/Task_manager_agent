@@ -14,4 +14,4 @@ initial_modal = ChatOpenAI(
     temperature = 0
 )
 
-modal = initial_modal.bind_tools(tools)
+modal = initial_modal.bind_tools(tools, parallel_tool_calls=False)

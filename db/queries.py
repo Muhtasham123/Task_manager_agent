@@ -1,5 +1,6 @@
 from db.connection import conn, cursor, r
 import json
+import time
 
 def insert_task(task : dict):
     try:
@@ -18,6 +19,8 @@ def insert_task(task : dict):
         print("insert task : task id :",task_id)
 
         conn.commit()
+
+        time.sleep(1)
 
         if task_id:
             r.xadd("task_events", {
@@ -49,6 +52,8 @@ def update_task(id : str, updation_dict : dict, metadata : dict):
 
         conn.commit()
 
+        time.sleep(1)
+
         rowcount = cursor.rowcount
 
         if not rowcount:
@@ -75,6 +80,8 @@ def delete_task(task_id : int):
         """,(task_id,))
 
         conn.commit()
+
+        time.sleep(1)
 
         rowcount = cursor.rowcount
 

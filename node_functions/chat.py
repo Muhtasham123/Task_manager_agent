@@ -1,5 +1,5 @@
 from states.tm_state import TaskManagerState
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import SystemMessage
 from modals.chat_modal import modal 
 
 def chat(state : TaskManagerState):
@@ -8,7 +8,15 @@ def chat(state : TaskManagerState):
     print("Thinking....")
     messages = state['messages']
 
-    response = modal.invoke(messages)
+    for try_no in range(1, 3):
+        print("Try no : ", try_no)
+        response = modal.invoke(messages)
+
+        if len(response.tool_calls) > 1:
+            messages.append(SystemMessage("You are only allowed to call ONE tool per response. Try again"))
+        else:
+            break
+
     print(response)
 
     iterations = state.get('iterations', 0) + 1

@@ -30,11 +30,15 @@ def process_event(event_data, event_id):
         task_id = str(task_id)
 
         task = None
+
         #fetching task from database
         if event_type in ("CREATE_TASK", "UPDATE_TASK"):
-            cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
+
+            cursor.execute("SELECT * FROM tasks WHERE id = %s", (int(task_id),))
             task = cursor.fetchone()
             print("db fetched task : ", task)
+            
+                
 
         if event_type == "CREATE_TASK":
             if not task:
