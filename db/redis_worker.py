@@ -3,6 +3,8 @@ from db.vector_store import vec_store
 from utils.functions import make_doc, make_updated_doc
 import json
 
+print("🔥 FILE STARTED")
+
 STREAM = "task_events"
 CONSUMER_GROUP = "task_events_group"
 CONSUMER_NAME = "C_1"
@@ -20,6 +22,7 @@ def process_event(event_data, event_id):
     try:
         event_type = event_data.get('event_type')
         task_id = event_data.get('task_id')
+        print("process_event : task id :", task_id)
 
         if not task_id:
             r.xack(STREAM, CONSUMER_GROUP, event_id)
@@ -31,17 +34,18 @@ def process_event(event_data, event_id):
         if event_type in ("CREATE_TASK", "UPDATE_TASK"):
             cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
             task = cursor.fetchone()
-
-        
+            print("db fetched task : ", task)
 
         if event_type == "CREATE_TASK":
             if not task:
+                print("could not add")
                 r.xack(STREAM, CONSUMER_GROUP, event_id)
                 return 
 
             task_doc = make_doc(task, task_id)
             #adding task in vector store 
             vec_store.add_documents(documents=[task_doc], ids = [str(task_id)])
+            vec_store.get(include=["embeddings", "documents", "metadatas"])
 
         elif event_type == "UPDATE_TASK":
             if not task:
@@ -67,6 +71,7 @@ def process_event(event_data, event_id):
 
 #Retry pending events using AUTOCLAIM
 def retry_pending():
+
     next_id = "0-0"
 
     while True:
@@ -111,9 +116,10 @@ def read_stream():
 
 #main driver
 def main():
+    print("main")
     while True:
         retry_pending()
         read_stream()
-
-
-main()
+        
+if __name__ == "__main__":
+    main()

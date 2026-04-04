@@ -15,10 +15,14 @@ def delete_task(task_id:int, runtime:ToolRuntime):
     
     # deleting task from actual database
 
-    delete_task_in_db(task_id)
+    success = "Success"
+    is_deleted = delete_task_in_db(task_id)
+
+    if not is_deleted:
+        success = "Failed"
 
     return ToolMessage(
-        content="Success",
+        content=success,
         tool_name="delete_task",
         tool_call_id=runtime.tool_call_id
     )

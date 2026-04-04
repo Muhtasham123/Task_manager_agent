@@ -1,9 +1,9 @@
 from langchain_core.messages import ToolMessage
-from utils.functions import make_updated_doc
 from langchain.tools import tool, ToolRuntime
 from db.queries import update_task as update_task_in_db
 from pydantic import BaseModel, Field
 from typing import Literal
+from db.vector_store import vec_store
 
 
 class TaskSchema(BaseModel):
@@ -12,6 +12,7 @@ class TaskSchema(BaseModel):
     description:str = Field(description="description of the task")
     category:Literal['work', 'personal'] = Field(description="category of the task")
     priority:Literal['high', 'medium', 'low'] = Field(description="priority of the task")
+    status:Literal['pending', 'in progress', 'done']
     due_time:str = Field(description="deadline of the task")
 
 @tool(args_schema = TaskSchema)
@@ -20,7 +21,8 @@ def update_task(
     title:str, 
     description:str, 
     category:str, 
-    priority:str, 
+    priority:str,
+    status:str, 
     due_time:str, 
     runtime : ToolRuntime
     ):
@@ -36,6 +38,7 @@ def update_task(
         "description":description,
         "category":category,
         "priority":priority,
+        "status":status,
         "due_time":due_time,
     }
     
@@ -66,13 +69,14 @@ def update_task(
         tool_call_id=runtime.tool_call_id
     )
 
-    # getting updating doc
-    updated_doc = make_updated_doc(updation_dict, task_docs[0]['metadata'])
+    success = "Success"
+    is_updated = update_task_in_db(task_id, updation_dict, task_docs[0]['metadata'])
 
-    update_task_in_db(task_id, updation_dict, updated_doc)
+    if not is_updated:
+        success = "Failed"
 
     return ToolMessage(
-        content="Success",
+        content = success,
         tool_name="update_task",
         tool_call_id=runtime.tool_call_id
     )

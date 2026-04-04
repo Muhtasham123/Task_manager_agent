@@ -31,11 +31,10 @@ Instructions:
 in the task list.
 """
 
-messages = [SystemMessage(system_message)]
 max_retries = 2
 
 def split_tasks(query, try_no):
-    
+    messages = [SystemMessage(system_message)]
     human_message = HumanMessage(query)
     messages.append(human_message)
     

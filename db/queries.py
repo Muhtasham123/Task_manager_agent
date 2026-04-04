@@ -15,6 +15,7 @@ def insert_task(task : dict):
         ))
 
         task_id = cursor.lastrowid
+        print("insert task : task id :",task_id)
 
         conn.commit()
 
@@ -32,26 +33,33 @@ def insert_task(task : dict):
 def update_task(id : str, updation_dict : dict, metadata : dict):
     try:
         # buildint SET clause
+        print("updation_dict : ", updation_dict)
+        cursor.execute("SELECT * FROM tasks WHERE id = %s", (21,))
+        print("Check row:", cursor.fetchone())
 
         set_clause = ", ".join([f"{key} = %s" for key in updation_dict.keys()])
 
         final_query = f"UPDATE tasks SET {set_clause} WHERE id = %s"
 
-        values = list(updation_dict.values()) + [id]
+        values = list(updation_dict.values()) + [int(id)]
 
+        print("Updated query  :",final_query)
+        print("Values :", values)
         cursor.execute(final_query, values)
 
         conn.commit()
 
         rowcount = cursor.rowcount
 
-        if rowcount:
-            r.xadd("task_events", {
-                "event_type" : "UPDATE_TASK",
-                "task_id" : id,
-                "updation_dict":json.dumps(updation_dict),
-                "metadata":json.dumps(metadata)
-            })
+        if not rowcount:
+            return False
+        
+        r.xadd("task_events", {
+            "event_type" : "UPDATE_TASK",
+            "task_id" : id,
+            "updation_dict":json.dumps(updation_dict),
+            "metadata":json.dumps(metadata)
+        })
 
         return True
 
@@ -70,11 +78,13 @@ def delete_task(task_id : int):
 
         rowcount = cursor.rowcount
 
-        if rowcount:
-            r.xadd("task_events", {
-                "event_type" : "DELETE_TASK",
-                "task_id" : task_id,
-            })
+        if not rowcount:
+            return False
+        
+        r.xadd("task_events", {
+            "event_type" : "DELETE_TASK",
+            "task_id" : task_id,
+        })
 
         return True
     except Exception as e:

@@ -7,5 +7,6 @@ class TaskSchema(BaseModel):
     description:str = Field(description="description of the task")
     category:Literal['work', 'personal'] = Field(description="category of the task")
     priority:Literal['high', 'medium', 'low'] = Field(description="priority of the task")
+    status:Literal['pending','in progress', 'done']
     due_time:str = Field(description="deadline of the task")
 

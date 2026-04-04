@@ -14,13 +14,13 @@ import os
 from states.tm_state import TaskManagerState
 import db.create_tables
 import db.vector_store
+
 from prompt import system_prompt
 from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel
 from fastapi import FastAPI
 
 #------------------------------------------------------------------
-
 
 #-------------------- GRAPH CONFIGURATIO SECTION -------------------
 # Creating graph instance

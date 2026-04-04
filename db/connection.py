@@ -5,7 +5,7 @@ conn = mysql.connector.connect(
     host="localhost",
     user="root",
     password="",
-    database="task_manager"
+    database="task_manager",
 )
 
 r = redis.Redis(
@@ -16,4 +16,4 @@ r = redis.Redis(
 )
 
 
-cursor = conn.cursor()
+cursor = conn.cursor(dictionary=True)

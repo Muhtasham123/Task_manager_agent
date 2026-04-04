@@ -16,25 +16,33 @@ def due_time_parser(date_str):
 
 # Function for making document objs of task
 def make_doc(task, id):
-    page_content = f"""Task title is {task['title']}, task description is {task['description']}, task category is {task['category']}, task priority is {task['priority']}, task due time is {str(task['due_time'])}
+    task_clean = task.copy()
+    task_clean['due_time'] = str(task_clean['due_time'])
+    task_clean['created_at'] = str(task_clean['created_at'])
+
+    page_content = f"""Task title is {task_clean['title']}, task description is {task_clean['description']}, task category is {task_clean['category']}, task priority is {task_clean['priority']}, task due time is {task_clean['due_time']}
     """
-    metadata = task.copy()
-    metadata['task_id'] = id
+
+    metadata = task_clean
+
     return Document(
+        ids = [id],
         page_content = page_content,
         metadata = metadata
     )
 
 def make_updated_doc(updation_dict, old_task):
-    updated_task = old_task.copy()
+    updated_task_clean = old_task.copy()
+    updated_task_clean['due_time'] = str(updated_task_clean['due_time'])
+    updated_task_clean['created_at'] = str(updated_task_clean['created_at'])
 
     for key, value in updation_dict.items():
-        updated_task[key] = value
+        updated_task_clean[key] = value
 
-    page_content = f"""Task title is {updated_task.get('title', '')}, task description is {updated_task.get('description', '')}, task category is {updated_task.get('category', '')}, task priority is {updated_task.get('priority', '')}, task due time is {str(updated_task.get('due_time', ''))}.
+    page_content = f"""Task title is {updated_task_clean.get('title', '')}, task description is {updated_task_clean.get('description', '')}, task category is {updated_task_clean.get('category', '')}, task priority is {updated_task_clean.get('priority', '')}, task due time is {str(updated_task_clean.get('due_time', ''))}.
     """
 
     return Document(
         page_content = page_content,
-        metadata = updated_task
+        metadata = updated_task_clean
     )
