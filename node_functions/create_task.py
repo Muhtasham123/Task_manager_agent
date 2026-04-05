@@ -1,6 +1,5 @@
 from schemas.task_schema import TaskSchema
 from langchain_core.messages import ToolMessage
-from modals.create_task_modal import modal
 from utils.functions import due_time_parser
 from langchain.tools import tool, ToolRuntime
 from langgraph.types import Command
@@ -27,6 +26,7 @@ def create_task(
         "description":description,
         "category":category,
         "priority":priority,
+        'status':status,
         "due_time":parsed_date
     }
 

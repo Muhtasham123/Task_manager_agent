@@ -109,3 +109,24 @@ def fetch_all_tasks():
         print("Error fetching tasks : ",e)
         return False
 #------------------------------------------------------------------------------------
+
+#-------------------------------FETCH SPECIFIC TASKS--------------------------------------
+def fetch_specific_tasks(ids:list):
+    try:
+        if not ids:
+            return False
+        
+        placeholders = ','.join(['%s'] * len(ids))
+
+        cursor.execute(f"""
+        SELECT * FROM tasks WHERE id IN({placeholders})
+        """,ids)
+
+        tasks = cursor.fetchall()
+
+        return tasks
+
+    except Exception as e:
+        print("Error fetching specific tasks : ",e)
+        return False
+#------------------------------------------------------------------------------------

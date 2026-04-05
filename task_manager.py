@@ -10,6 +10,7 @@ from node_functions.update_task import update_task
 from node_functions.chat import chat
 from node_functions.find_task import find_task
 from node_functions.access_db import access_db
+from langgraph.types import Command
 
 from langgraph.prebuilt import ToolNode, tools_condition
 import os
@@ -18,7 +19,7 @@ import db.create_tables
 import db.vector_store
 
 from prompt import system_prompt
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel
 from fastapi import FastAPI
 
@@ -57,17 +58,22 @@ task_manager_workflow = graph.compile(checkpointer=checkpointer)
 #-----------------------------------------------------------------------
 
 #-------------------------- GRAPH EXECUTION FUNCTION --------------------
-def execute_workflow(task, chat_id):
+def execute_workflow(query, chat_id, req_type):
 
     config = {'configurable': {'thread_id': chat_id}}
 
     initial_state = {
-        'messages': [HumanMessage(task)],
+        'messages': [HumanMessage(query)],
         'iterations': 0,
         'max_iterations': 2
     }
 
-    return task_manager_workflow.invoke(initial_state, config)
+    if req_type == 'normal':
+        return task_manager_workflow.invoke(initial_state, config)
+    
+    elif req_type == 'resume':
+        
+        return task_manager_workflow.invoke(Command(resume=query), config)
 
 #------------------------------------------------------------------------
 
@@ -76,6 +82,7 @@ def execute_workflow(task, chat_id):
 class RequestSchema(BaseModel):
     query:str
     chat_id:str
+    request_type:str
 
 app = FastAPI()
 
@@ -83,6 +90,7 @@ app = FastAPI()
 async def execute_query(req: RequestSchema):
     query = req.query
     chat_id = req.chat_id
+    req_type = req.request_type
 
     #task_list = split_tasks(query, 1)
     #print(task_list)
@@ -96,8 +104,16 @@ async def execute_query(req: RequestSchema):
     # ]
     #msgs = [state['messages'][-1].content for state in final_state]
 
-    final_state = execute_workflow(query, chat_id)
+    final_state = execute_workflow(query, chat_id, req_type)
+
+    if '__interrupt__' in final_state:
+        msg = final_state['__interrupt__'][0].value['msg']
+        tasks_found = final_state['__interrupt__'][0].value.get('tasks')
+
+        return {
+            "message":msg,
+            "tasks_found":tasks_found
+        }
+    
     msgs = final_state['messages'][-1].content
-
-
     return {"message": msgs}
