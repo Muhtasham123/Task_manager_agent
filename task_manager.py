@@ -115,5 +115,6 @@ async def execute_query(req: RequestSchema):
             "tasks_found":tasks_found
         }
     
+    print("FInal state : ", final_state)
     msgs = final_state['messages'][-1].content
     return {"message": msgs}
