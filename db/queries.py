@@ -1,7 +1,6 @@
-from db.connection import conn, cursor, r
-import json
-import time
+from db.connection import conn, cursor
 
+#-------------------------------INSERT TASK------------------------------------------
 def insert_task(task : dict):
     try:
         cursor.execute("""
@@ -20,80 +19,93 @@ def insert_task(task : dict):
 
         conn.commit()
 
-        time.sleep(1)
-
-        if task_id:
-            r.xadd("task_events", {
-                "event_type" : "CREATE_TASK",
-                "task_id" : task_id
-            })
-
         return task_id
     except Exception as e:
         print("Error inserting task : ",e)
+#------------------------------------------------------------------------------------
 
-
-def update_task(id : str, updation_dict : dict, metadata : dict):
+#-------------------------------UPDATE TASK------------------------------------------
+def update_task(updation_dict_list : list):
+    total_updated = 0
+    updated_ids = []
     try:
         # buildint SET clause
-        print("updation_dict : ", updation_dict)
-        cursor.execute("SELECT * FROM tasks WHERE id = %s", (21,))
-        print("Check row:", cursor.fetchone())
+        print("updation_dict_list : ", updation_dict_list)
 
-        set_clause = ", ".join([f"{key} = %s" for key in updation_dict.keys()])
+        for updation_dict in updation_dict_list:
+            id = updation_dict['id']
+            updation_dict.pop('id', None)
 
-        final_query = f"UPDATE tasks SET {set_clause} WHERE id = %s"
+            set_clause = ", ".join([f"{key} = %s" for key in updation_dict.keys()])
 
-        values = list(updation_dict.values()) + [int(id)]
+            final_query = f"UPDATE tasks SET {set_clause} WHERE id = %s"
 
-        print("Updated query  :",final_query)
-        print("Values :", values)
-        cursor.execute(final_query, values)
+            values = list(updation_dict.values()) + [int(id)]
+
+            print("Updated query  :",final_query)
+            print("Values :", values)
+            cursor.execute(final_query, values)
+            total_updated += cursor.rowcount
+
+            if cursor.rowcount:
+                updated_ids.append(id)
 
         conn.commit()
 
-        time.sleep(1)
-
-        rowcount = cursor.rowcount
-
-        if not rowcount:
-            return False
-        
-        r.xadd("task_events", {
-            "event_type" : "UPDATE_TASK",
-            "task_id" : id,
-            "updation_dict":json.dumps(updation_dict),
-            "metadata":json.dumps(metadata)
-        })
-
-        return True
+        return {
+            'success':True,
+            'updated_ids':updated_ids,
+            'update_count':total_updated,
+            'error':None
+        }
 
     except Exception as e:
         print("Error updating task : ",e)
-        return False
+        return {
+            'success':False,
+            'updated_ids':updated_ids,
+            'update_count':total_updated,
+            'error':str(e)
+        }
+#------------------------------------------------------------------------------------
 
-
-def delete_task(task_id : int):
+#-------------------------------DELETE TASK------------------------------------------
+def delete_task(task_ids : list):
     try:
-        cursor.execute("""
-        DELETE FROM tasks where id = %s
-        """,(task_id,))
+        if not task_ids:
+            return False
+        
+        placeholders = ','.join(['%s'] * len(task_ids))
+
+        cursor.execute(f"""
+        DELETE FROM tasks where id IN ({placeholders})
+        """, task_ids)
 
         conn.commit()
-
-        time.sleep(1)
 
         rowcount = cursor.rowcount
 
         if not rowcount:
             return False
-        
-        r.xadd("task_events", {
-            "event_type" : "DELETE_TASK",
-            "task_id" : task_id,
-        })
 
         return True
     except Exception as e:
         print("Error deleting task : ",e)
         return False
+#------------------------------------------------------------------------------------
+
+#-------------------------------FETCH ALL TASKS--------------------------------------
+def fetch_all_tasks():
+    try:
+        cursor.execute("""
+        SELECT * FROM tasks
+        """)
+
+        tasks = cursor.fetchall()
+
+        return tasks
+
+    except Exception as e:
+        print("Error fetching tasks : ",e)
+        return False
+#------------------------------------------------------------------------------------

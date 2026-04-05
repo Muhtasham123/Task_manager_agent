@@ -5,18 +5,18 @@ from db.vector_store import vec_store
 from pydantic import BaseModel, Field
 
 class DeleteSchema(BaseModel):
-    task_id : int = Field(description="Id of task to be deleted")
+    task_ids : list = Field(description="list of Ids of tasks to be deleted")
 
 @tool(args_schema = DeleteSchema)
-def delete_task(task_id:int, runtime:ToolRuntime):
+def delete_task(task_ids:list, runtime:ToolRuntime):
 
-    """LLM node for deleteing task from database"""
+    """LLM node for deleteing tasks from database"""
     print("Using delete_task tool....")
     
     # deleting task from actual database
 
     success = "Success"
-    is_deleted = delete_task_in_db(task_id)
+    is_deleted = delete_task_in_db(task_ids)
 
     if not is_deleted:
         success = "Failed"

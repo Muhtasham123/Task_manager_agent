@@ -1,13 +1,15 @@
+#-------------------------------------IMPORTS--------------------------------------------
 from langchain_core.messages import ToolMessage
 from langchain.tools import tool, ToolRuntime
 from db.queries import update_task as update_task_in_db
 from pydantic import BaseModel, Field
-from typing import Literal
-from db.vector_store import vec_store
+from typing import Literal, List
+#----------------------------------------------------------------------------------------
 
+#-------------------------------------SCHEMAS--------------------------------------------
 
 class TaskSchema(BaseModel):
-    task_id:str = Field(description="id of the task")
+    task_id:int = Field(description="id of the task")
     title:str = Field(description="title of the task")
     description:str = Field(description="description of the task")
     category:Literal['work', 'personal'] = Field(description="category of the task")
@@ -15,68 +17,45 @@ class TaskSchema(BaseModel):
     status:Literal['pending', 'in progress', 'done']
     due_time:str = Field(description="deadline of the task")
 
-@tool(args_schema = TaskSchema)
-def update_task(
-    task_id:str,
-    title:str, 
-    description:str, 
-    category:str, 
-    priority:str,
-    status:str, 
-    due_time:str, 
-    runtime : ToolRuntime
-    ):
+class TasksListSchema(BaseModel):
+    tasks_list:List[TaskSchema] = Field(description = "List of tasks to be updated")
 
-    """LLM node for updating task in database"""
+#---------------------------------------------------------------------------------------
+
+#-------------------------------------TOOL----------------------------------------------
+
+@tool(args_schema = TasksListSchema)
+def update_task( runtime : ToolRuntime, tasks_list:List[TaskSchema]):
+
+    """LLM node for updating tasks in database"""
     print("Using update_task tool....")
 
     # Extracting fields to be updated
-    updation_dict = {}
+    updation_dict_list = []
 
-    fields = {
-        "title":title,
-        "description":description,
-        "category":category,
-        "priority":priority,
-        "status":status,
-        "due_time":due_time,
-    }
-    
-    for key, value in fields.items():
-        if value:
-            updation_dict[key] = value
-    
-
-    # getting task doc from vector store to update there as well
-
-    initial_tasks_docs = vec_store.get(
-        include=["documents", "metadatas"]
-    )
-
-    task_docs = [
-        {
-            "task_id":id_,
-            "metadata":metadata
+    for task in tasks_list:
+        updation_dict = {}
+        fields = {
+            "id":task.task_id,
+            "title":task.title,
+            "description":task.description,
+            "category":task.category,
+            "priority":task.priority,
+            "status":task.status,
+            "due_time":task.due_time,
         }
-        for id_, metadata in zip(initial_tasks_docs["ids"], initial_tasks_docs["metadatas"])
-        if id_ == task_id
-    ]
+    
+        for key, value in fields.items():
+            if value is not None:
+                updation_dict[key] = value
 
-    if not task_docs:
-        return ToolMessage(
-        content="Task not found",
-        tool_name="update_task",
-        tool_call_id=runtime.tool_call_id
-    )
+        updation_dict_list.append(updation_dict)
 
-    success = "Success"
-    is_updated = update_task_in_db(task_id, updation_dict, task_docs[0]['metadata'])
-
-    if not is_updated:
-        success = "Failed"
+    result = update_task_in_db(updation_dict_list)
 
     return ToolMessage(
-        content = success,
+        content = result,
         tool_name="update_task",
         tool_call_id=runtime.tool_call_id
     )
+#---------------------------------------------------------------------------------------

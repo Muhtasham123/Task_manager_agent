@@ -9,6 +9,8 @@ from node_functions.delete_task import delete_task
 from node_functions.update_task import update_task
 from node_functions.chat import chat
 from node_functions.find_task import find_task
+from node_functions.access_db import access_db
+
 from langgraph.prebuilt import ToolNode, tools_condition
 import os
 from states.tm_state import TaskManagerState
@@ -27,7 +29,7 @@ from fastapi import FastAPI
 graph = StateGraph(TaskManagerState)
 
 # Adding nodes into graph
-tools = [create_task, delete_task, update_task, find_task]
+tools = [create_task, delete_task, update_task, access_db]
 tool_node = ToolNode(tools)
 
 graph.add_node('chat',chat)
