@@ -16,7 +16,7 @@ def chat(state : TaskManagerState):
 
     if (last_message and 
     isinstance(last_message, ToolMessage) and 
-    last_message.name == "delete_task"):
+    (last_message.name == "delete_task" or last_message.name == 'update_task')):
         
         tool_message = json.loads(last_message.content)
         ai_message = tool_message['ai_message']

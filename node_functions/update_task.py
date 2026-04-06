@@ -2,8 +2,11 @@
 from langchain_core.messages import ToolMessage
 from langchain.tools import tool, ToolRuntime
 from db.queries import update_task as update_task_in_db
+from db.queries import fetch_specific_tasks
 from pydantic import BaseModel, Field
 from typing import Literal, List
+from langgraph.types import interrupt
+import json
 #----------------------------------------------------------------------------------------
 
 #-------------------------------------SCHEMAS--------------------------------------------
@@ -30,6 +33,18 @@ def update_task( runtime : ToolRuntime, tasks_list:List[TaskSchema]):
     """LLM node for updating tasks in database"""
     print("Using update_task tool....")
 
+    tasks_ids = [task.task_id for task in tasks_list]
+    old_tasks = fetch_specific_tasks(tasks_ids)
+    old_tasks_clean = []
+
+    for old_task in old_tasks:
+        old_task.pop('created_at')
+        old_task['due_time'] = str(old_task['due_time'])
+        old_tasks_clean.append(old_task)
+
+    if not old_tasks:
+        return "No tasks found to be updated"
+
     # Extracting fields to be updated
     updation_dict_list = []
 
@@ -51,11 +66,29 @@ def update_task( runtime : ToolRuntime, tasks_list:List[TaskSchema]):
 
         updation_dict_list.append(updation_dict)
 
-    result = update_task_in_db(updation_dict_list)
+    decision = interrupt({
+        'tasks':json.dumps({
+            'old_tasks':old_tasks,
+            'new_tasks':updation_dict_list
+        }),
+        'msg':'These tasks are found. Should I proceed with updation?(yes/no)'
+    })
 
-    return ToolMessage(
-        content = result,
-        tool_name="update_task",
-        tool_call_id=runtime.tool_call_id
-    )
+    if decision == 'no':
+        return json.dumps({
+            'ai_message' : 'These tasks are found. Should I proceed with deletion?(yes/no)' +str(old_tasks) + str(updation_dict_list),
+            'human_message' : 'no',
+            'result' : "Updation canceled by user"
+        })
+
+    elif decision == 'yes':
+        result = update_task_in_db(updation_dict_list)
+
+        return json.dumps({
+            'ai_message' : 'These tasks are found. Should I proceed with deletion?(yes/no)' +str(old_tasks) + str(updation_dict_list),
+            'human_message' : 'yes',
+            'result' : result
+        })
+    else:
+        return "Invalid response"
 #---------------------------------------------------------------------------------------

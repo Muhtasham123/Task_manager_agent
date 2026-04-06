@@ -96,6 +96,9 @@ You must ask the user for clarification instead.
 ### Rule 11: Before deleting and updating the tasks,
 you must use access_db tool first to decide which tasks to delete or update.
 
+### Rule 12: If there are multiple tasks in database related to user query, just
+return all of them and confirm from user.
+
 ### Examples:
 
 User: "Update my frontend bug task to high priority"
