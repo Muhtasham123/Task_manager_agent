@@ -2,7 +2,6 @@ from langchain_core.messages import ToolMessage, AIMessage, HumanMessage
 from langchain.tools import tool, ToolRuntime
 from db.queries import delete_task as delete_task_in_db
 from db.queries import fetch_specific_tasks
-from db.vector_store import vec_store
 from pydantic import BaseModel, Field
 from langgraph.types import interrupt
 from states.tm_state import TaskManagerState
