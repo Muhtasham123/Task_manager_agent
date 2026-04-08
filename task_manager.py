@@ -18,7 +18,7 @@ from states.tm_state import TaskManagerState
 import db.create_tables
 
 from prompt import system_prompt
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel
 from fastapi import FastAPI
 from psycopg import connect
@@ -62,9 +62,20 @@ task_manager_workflow = graph.compile(checkpointer=checkpointer)
 def execute_workflow(query, chat_id, req_type):
 
     config = {'configurable': {'thread_id': chat_id}}
+    
+    state_snapshot = task_manager_workflow.get_state(config)
 
+    existing_messages = state_snapshot.values.get("messages", []) if state_snapshot else []
+    
+    if existing_messages:
+        messages = [HumanMessage(query)]
+    else:
+        messages = [SystemMessage(system_prompt), HumanMessage(query)]
+
+    print("Initial messages : ", messages)
     initial_state = {
-        'messages': [HumanMessage(query)],
+        'messages': messages,
+        'summary':'',
         'iterations': 0,
         'max_iterations': 2
     }
