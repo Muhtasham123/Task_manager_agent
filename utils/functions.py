@@ -12,3 +12,6 @@ def due_time_parser(date_str):
         return None
     else:
         return parsed_date.isoformat()
+    
+def format_memories(memories):
+    return "\n".join([f"- {m.value['data']}" for m in memories])

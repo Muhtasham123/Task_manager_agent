@@ -1,12 +1,11 @@
 #---------------------- IMPORTS SECTION ---------------------------
 
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.memory import InMemorySaver
-from concurrent.futures import ThreadPoolExecutor
 from node_functions.create_task import create_task
 from node_functions.delete_task import delete_task
 from node_functions.update_task import update_task
 from node_functions.chat import chat
+from node_functions.long_term_memory import memory_handler
 from node_functions.access_db import access_db
 from langgraph.types import Command
 from langgraph.checkpoint.postgres import PostgresSaver
@@ -18,17 +17,19 @@ from states.tm_state import TaskManagerState
 import db.create_tables
 
 from prompt import system_prompt
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel
 from fastapi import FastAPI
 from psycopg import connect
+from langgraph.store.postgres import PostgresStore
+from modals.embedding_modal import embedding_function 
 
 load_dotenv()
 DB_URI = os.getenv("DB_URI")
 
 #------------------------------------------------------------------
 
-#-------------------- GRAPH CONFIGURATIO SECTION -------------------
+#-------------------- GRAPH CONFIGURATION SECTION -------------------
 # Creating graph instance
 graph = StateGraph(TaskManagerState)
 
@@ -36,11 +37,13 @@ graph = StateGraph(TaskManagerState)
 tools = [create_task, delete_task, update_task, access_db]
 tool_node = ToolNode(tools)
 
+graph.add_node('memory_handler',memory_handler)
 graph.add_node('chat',chat)
 graph.add_node('tools',tool_node)
 
 # Adding edges into graph
-graph.add_edge(START, 'chat')
+graph.add_edge(START, 'memory_handler')
+graph.add_edge('memory_handler', 'chat')
 graph.add_conditional_edges('chat', tools_condition)
 graph.add_edge('tools', 'chat')
 graph.add_edge('chat', END)
@@ -51,10 +54,13 @@ graph.add_edge('chat', END)
 postgres_conn = connect(DB_URI)
 
 checkpointer = PostgresSaver(postgres_conn)
+store = PostgresStore(postgres_conn, index={"embed":embedding_function, "dims":384})
+
 postgres_conn.autocommit = True
 checkpointer.setup()
+store.setup()
 
-task_manager_workflow = graph.compile(checkpointer=checkpointer)
+task_manager_workflow = graph.compile(checkpointer=checkpointer, store=store)
 
 #-----------------------------------------------------------------------
 
@@ -66,7 +72,7 @@ def execute_workflow(query, chat_id, req_type):
     state_snapshot = task_manager_workflow.get_state(config)
 
     existing_messages = state_snapshot.values.get("messages", []) if state_snapshot else []
-    
+
     if existing_messages:
         messages = [HumanMessage(query)]
     else:
