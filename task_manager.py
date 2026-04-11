@@ -21,7 +21,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel
 from fastapi import FastAPI
 from psycopg import connect
-from langgraph.store.postgres import PostgresStore
+from langgraph.store.memory import InMemoryStore
 from modals.embedding_modal import embedding_function 
 
 load_dotenv()
@@ -54,11 +54,10 @@ graph.add_edge('chat', END)
 postgres_conn = connect(DB_URI)
 
 checkpointer = PostgresSaver(postgres_conn)
-store = PostgresStore(postgres_conn, index={"embed":embedding_function, "dims":384})
+store = InMemoryStore(index={"embed":embedding_function, "dims":384})
 
 postgres_conn.autocommit = True
 checkpointer.setup()
-store.setup()
 
 task_manager_workflow = graph.compile(checkpointer=checkpointer, store=store)
 
