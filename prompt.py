@@ -53,7 +53,7 @@ If the user wants to update or delete a task:
 ### Rule 2: Sequential Tool Usage
 You must follow this flow when updating tasks:
 
-Step 1: find_task (if needed)
+Step 1: access_db (if needed)
 Step 2: get_task (optional but recommended for clarity)
 Step 3: update_task
 
