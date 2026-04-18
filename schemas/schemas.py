@@ -10,3 +10,13 @@ class TaskSchema(BaseModel):
     status:Literal['pending','in progress', 'done']
     due_time:str = Field(description="deadline of the task")
 
+# Creating draft decider schema
+class DraftDeciderSchema(BaseModel):
+    need_draft:Literal['need_draft', 'not_need_draft']
+
+
+# Creating draft generator schema
+class DraftSchema(BaseModel):
+    title:str = Field(description="Title of the draft")
+    text:str = Field(description="Actual text of the draft")
+

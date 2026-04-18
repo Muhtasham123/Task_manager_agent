@@ -130,3 +130,25 @@ def fetch_specific_tasks(ids:list):
         print("Error fetching specific tasks : ",e)
         return False
 #------------------------------------------------------------------------------------
+
+#-------------------------------INSERT TASK------------------------------------------
+def insert_draft(draft : dict):
+    try:
+        cursor.execute("""
+        INSERT INTO drafts(title, text)
+        VALUES(%s, %s)
+        """,(
+            draft['title'],
+            draft['text'],
+        ))
+
+        draft_id = cursor.lastrowid
+        print("insert draft : draft id :",draft_id)
+
+        conn.commit()
+
+        return cursor.rowcount
+    except Exception as e:
+        print("Error inserting draft : ",e)
+        return cursor.rowcount
+#------------------------------------------------------------------------------------

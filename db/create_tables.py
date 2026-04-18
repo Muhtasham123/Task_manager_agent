@@ -14,6 +14,17 @@ def create_tables():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS drafts(
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            title VARCHAR(255) UNIQUE,
+            text TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+        )
+        """
+    )
     conn.commit()
 
 create_tables()

@@ -1,4 +1,4 @@
-from schemas.task_schema import TaskSchema
+from schemas.schemas import TaskSchema
 from langchain_core.messages import ToolMessage
 from utils.functions import due_time_parser
 from langchain.tools import tool, ToolRuntime

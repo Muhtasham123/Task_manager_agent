@@ -7,6 +7,9 @@ from node_functions.update_task import update_task
 from node_functions.chat import chat
 from node_functions.long_term_memory import memory_handler
 from node_functions.access_db import access_db
+from node_functions.draft_decider import draft_decider
+from utils.functions import resolve_draft_decision
+from utils.functions import tool_router
 from langgraph.types import Command
 from langgraph.checkpoint.postgres import PostgresSaver
 
@@ -22,7 +25,8 @@ from pydantic import BaseModel
 from fastapi import FastAPI
 from psycopg import connect
 from langgraph.store.memory import InMemoryStore
-from modals.embedding_modal import embedding_function 
+from modals.embedding_modal import embedding_function
+from draft_manager import draft_manager_workflow 
 
 load_dotenv()
 DB_URI = os.getenv("DB_URI")
@@ -40,13 +44,17 @@ tool_node = ToolNode(tools)
 graph.add_node('memory_handler',memory_handler)
 graph.add_node('chat',chat)
 graph.add_node('tools',tool_node)
+graph.add_node('draft_decider', draft_decider)
+graph.add_node('draft_manager', draft_manager_workflow)
 
 # Adding edges into graph
 graph.add_edge(START, 'memory_handler')
 graph.add_edge('memory_handler', 'chat')
-graph.add_conditional_edges('chat', tools_condition)
+graph.add_conditional_edges('chat', tool_router, {"need_tools":"tools", "not_need_tools":"draft_decider"})
 graph.add_edge('tools', 'chat')
-graph.add_edge('chat', END)
+graph.add_conditional_edges('draft_decider', resolve_draft_decision, {'need_draft':'draft_manager', 'not_need_draft':END})
+graph.add_edge('draft_manager', END)
+
 
 # Compiling graph with postgresSaver checkpointer
 #checkpointer = InMemorySaver()
@@ -80,6 +88,8 @@ def execute_workflow(query, chat_id, req_type):
     print("Initial messages : ", messages)
     initial_state = {
         'messages': messages,
+        'user_query':query,
+        'need_draft':'',
         'summary':'',
         'iterations': 0,
         'max_iterations': 2
